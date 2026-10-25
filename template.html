@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>منظومة المدارس - مراقبة تعليم سلوق</title>
+<style>
+:root{--bg:#f2f5f6;--card:#fff;--ink:#14262f;--mut:#5b6e78;--ac:#0b6e69;--on:#fff;--ln:#d5dde1;--hd:#e6eef0}
+@media(prefers-color-scheme:dark){:root{--bg:#10191e;--card:#17232a;--ink:#e6eef1;--mut:#93a6af;--ac:#4cc3bb;--on:#06201e;--ln:#2a3a43;--hd:#1e2e36}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Tajawal,"Segoe UI",Tahoma,Arial,sans-serif}
+button,input,select{font:inherit;color:inherit}
+header{background:var(--ac);color:var(--on);padding:18px 20px}
+header h1{margin:0;font-size:1.4rem}
+header p{margin:2px 0 0;opacity:.85;font-size:.9rem}
+main{max-width:1200px;margin:0 auto;padding:16px}
+#gate{max-width:380px;margin:12vh auto;background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:24px}
+#gate h2{margin:0 0 6px}#gate p{color:var(--mut);margin:0 0 14px}
+input[type=password],input[type=search]{width:100%;padding:10px 12px;border:1px solid var(--ln);border-radius:8px;background:var(--bg)}
+.btn{background:var(--ac);color:var(--on);border:0;border-radius:8px;padding:10px 18px;cursor:pointer;margin-top:12px}
+.btn:disabled{opacity:.6}
+#err{color:#c0392b;min-height:1.4em;margin-top:8px;font-size:.9rem}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+nav button{background:var(--card);border:1px solid var(--ln);border-radius:20px;padding:6px 14px;cursor:pointer}
+nav button[aria-pressed=true]{background:var(--ac);color:var(--on);border-color:var(--ac)}
+nav small{opacity:.7;margin-inline-start:4px}
+.bar{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.bar span{color:var(--mut);white-space:nowrap;font-size:.9rem}
+.wrap{overflow-x:auto;background:var(--card);border:1px solid var(--ln);border-radius:10px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--ln);white-space:nowrap}
+th{background:var(--hd);position:sticky;top:0;font-weight:700}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--hd)}
+.more{display:block;margin:14px auto}
+dialog{border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--ink);width:min(680px,94vw);max-height:88vh;padding:0}
+dialog::backdrop{background:#0008}
+dialog h3{margin:0;padding:14px 18px;background:var(--hd);display:flex;justify-content:space-between;align-items:center}
+dialog h3 button{background:none;border:0;font-size:1.4rem;cursor:pointer}
+dl{margin:0;padding:10px 18px 18px;display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;overflow:auto;max-height:70vh}
+dt{color:var(--mut)}dd{margin:0;word-break:break-word}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+</style>
+</head>
+<body>
+<header><h1>منظومة المدارس</h1><p>مراقبة تعليم سلوق - عرض وبحث</p></header>
+<main>
+<section id="gate">
+<h2>بيانات محمية</h2>
+<p>أدخل كلمة السر لفتح البيانات. تُفك مشفرة داخل متصفحك فقط.</p>
+<input id="pw" type="password" autocomplete="current-password" aria-label="كلمة السر">
+<button class="btn" id="go">فتح</button>
+<div id="err" role="alert"></div>
+</section>
+<section id="app" hidden>
+<nav id="tabs"></nav>
+<div class="bar"><input id="q" type="search" placeholder="ابحث بالاسم أو الرقم الوطني أو المدرسة..." aria-label="بحث"><span id="cnt"></span></div>
+<div class="wrap"><table><thead id="th"></thead><tbody id="tb"></tbody></table><div id="em" class="empty" hidden>لا توجد نتائج مطابقة.</div></div>
+<button class="btn more" id="more" hidden>عرض المزيد</button>
+</section>
+</main>
+<dialog id="dlg"><h3><span id="dt"></span><button id="x" aria-label="إغلاق">×</button></h3><dl id="dl"></dl></dialog>
+<script>
+const BLOB="__BLOB__";
+const L={NAME:'الاسم',SEQ:'رقم الموظف',record:'الرقم الوطني',bank:'المصرف',subbank:'فرع المصرف',no_acc:'رقم الحساب',postion:'الوظيفة',school:'المدرسة',sch:'المدرسة',manager:'المدير',qualified:'المؤهل',assignation:'التخصص',designation:'صفة التعيين',D_designation:'تاريخ التعيين',class_now:'الدرجة',D_class:'سنة الدرجة',birthday:'تاريخ الميلاد',birth:'مكان الميلاد',MOTHER:'اسم الأم',SEX:'الجنس',flag:'الجنسية',Tel:'الهاتف',subfamily:'فصيلة الدم',clubbable:'الحالة الاجتماعية',D_qualified:'سنة المؤهل',side:'جهة التخرج',class_hour:'الفترة',Nota_work:'الملاحظة',tot_h:'عدد الحصص',tot_d:'أيام الحضور',MUN_EDIT:'الشهر',YEAR_EDIT:'السنة',rep5:'المجموع',rep6:'التقدير',d_td:'من تاريخ',as_td:'إلى تاريخ',Procedur:'الإجراء',d_mon:'الشهر',y_yar:'السنة',j_w:'تاريخ المباشرة',m_w:'الشهر',y_w:'السنة',ajz_w:'وضع العجز',MANJ:'المدخل',MANG:'المدخل',P_M:'الفترة',ADM:'المسؤول',state:'الحالة',trade:'المهنة'};
+const SETS=[
+['empolye','الموظفون',['NAME','SEQ','qualified','assignation','bank','subbank','designation']],
+['NESAB','النصاب',['NAME','SEQ','school','postion','qualified','assignation','designation','class_now']],
+['repot','التقارير السنوية',['NAME','SEQ','school','postion','rep5','rep6','d_td','as_td']],
+['TAMAM_ARC','أرشيف التمام',['NAME','SEQ','school','postion','tot_d','tot_h','MUN_EDIT','YEAR_EDIT']],
+['Descunt','الخصومات',['NAME','SEQ','school','postion','Nota_work','tot_d','MUN_EDIT','YEAR_EDIT']],
+['work_end','انتهاء الخدمة',['NAME','SEQ','qualified','assignation','postion','school']],
+['Proced','الإجراءات',['NAME','school','postion','Procedur','d_mon','y_yar']],
+['ivi_del','العجز',['name','school','postion','j_w','m_w','y_w','ajz_w']],
+['SCHOOLS','المدارس',['sch','manager']],
+['BIAN','بيانات المدرسة',['SCHOOL','MANGE','ADM','P_M','state']]
+];
+const $=id=>document.getElementById(id);
+const norm=s=>String(s).replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').toLowerCase();
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+let DATA,cur,rows,shown,PAGE=100;
+async function open(pw){
+ const raw=b64(BLOB),salt=raw.slice(0,16),iv=raw.slice(16,28),ct=raw.slice(28);
+ const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+ const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+ const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+ const txt=await new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+ return JSON.parse(txt);
+}
+$('go').onclick=async()=>{
+ const b=$('go');b.disabled=true;$('err').textContent='جارٍ الفتح...';
+ try{DATA=await open($('pw').value);$('gate').hidden=true;$('app').hidden=false;init();}
+ catch(e){$('err').textContent='كلمة السر غير صحيحة، أو المتصفح لا يدعم فك التشفير.';}
+ b.disabled=false;
+};
+$('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
+function init(){
+ const t=$('tabs');
+ SETS.forEach(s=>{const n=(DATA[s[0]]||[]).length;if(!n)return;
+  const b=document.createElement('button');b.innerHTML=s[1]+'<small>'+n+'</small>';
+  b.onclick=()=>pick(s[0]);b.dataset.k=s[0];t.append(b);});
+ pick(t.firstChild.dataset.k);
+}
+function pick(k){
+ cur=SETS.find(s=>s[0]===k);
+ document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
+ $('th').innerHTML='<tr>'+cur[2].map(c=>'<th>'+(L[c]||c)+'</th>').join('')+'</tr>';
+ $('q').value='';filter();
+}
+function filter(){
+ const q=norm($('q').value.trim()),all=DATA[cur[0]];
+ rows=q?all.filter(r=>(r._i||(r._i=norm(Object.values(r).join(' ')))).includes(q)):all;
+ shown=0;$('tb').innerHTML='';more();
+ $('cnt').textContent=rows.length+' من '+all.length;
+ $('em').hidden=rows.length>0;
+}
+function more(){
+ const f=document.createDocumentFragment();
+ rows.slice(shown,shown+PAGE).forEach(r=>{
+  const tr=document.createElement('tr');
+  tr.innerHTML=cur[2].map(c=>'<td></td>').join('');
+  cur[2].forEach((c,i)=>tr.children[i].textContent=r[c]??'');
+  tr.onclick=()=>show(r);f.append(tr);
+ });
+ $('tb').append(f);shown=Math.min(shown+PAGE,rows.length);$('more').hidden=shown>=rows.length;
+}
+$('more').onclick=more;
+$('q').oninput=filter;
+function show(r){
+ $('dt').textContent=r.NAME||r.name||r.sch||r.SCHOOL||'تفاصيل';
+ const dl=$('dl');dl.innerHTML='';
+ Object.entries(r).forEach(([k,v])=>{if(k==='_i'||v===''||v==null)return;
+  const a=document.createElement('dt'),b=document.createElement('dd');
+  a.textContent=L[k]||k;b.textContent=v;dl.append(a,b);});
+ $('dlg').showModal();
+}
+$('x').onclick=()=>$('dlg').close();
+$('dlg').onclick=e=>{if(e.target===$('dlg'))$('dlg').close()};
+</script>
+</body>
+</html>
